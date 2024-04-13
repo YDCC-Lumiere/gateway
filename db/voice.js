@@ -1,6 +1,7 @@
-const { db } = require('.')
+const getDb = require('./index')
 
 const getCollection = async () => {
+  const db = await getDb();
   return await db.collection('embedded-voice');
 }
 

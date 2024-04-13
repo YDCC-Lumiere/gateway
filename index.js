@@ -2,7 +2,6 @@ const express = require('express')
 const multer = require('multer')
 const cors = require('cors')
 
-const { initDb } = require('./db')
 const { handleHealth } = require('./controller/health')
 const { handleFace, handleVoiceUpload, handleVoiceVerify } = require('./controller/main')
 
@@ -22,6 +21,5 @@ app.post('/api/voice/upload', upload.single('file'), handleVoiceUpload)
 app.post('/api/voice/verify', upload.single('file'), handleVoiceVerify)
 
 app.listen(8081, async () => {
-  await initDb();
   console.log("Started on localhost:8081");
 })

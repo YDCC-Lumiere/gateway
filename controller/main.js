@@ -1,11 +1,22 @@
 const { FormData } = require('formdata-node')
-const { fileFromPath } = require('formdata-node/file-from-path')
-const { clientFace, clientVoice } = require('../utils/axios')
-const { findEmbedding, saveEmbedding } = require('../db/voice')
+const { fileFromPath } = require('formdata-node/file-from-path');
+const { ReadableStream } = require('web-streams-polyfill');
+const { v4 } = require('uuid');
+const { clientFace, clientVoice } = require('../utils/axios');
+const { findEmbedding, saveEmbedding } = require('../db/voice');
+const { success, failure } = require('../utils/response');
+
+const generateId = () => {
+  return v4();
+}
+
+// NOTE: profiling ReadableStream
+Object.defineProperties(globalThis, {
+  ReadableStream: { value: ReadableStream }
+})
 
 const handleFace = (req, res) => {
   const file = req.file;
-  console.log(file);
 
   return res.status(200).send("OK");
 }
@@ -19,7 +30,7 @@ const uploadVoice = async (path) => {
     }
   })
 
-  return res.embedding
+  return res.data.embed
 }
 
 const handleVoiceUpload = async (req, res) => {
@@ -27,12 +38,13 @@ const handleVoiceUpload = async (req, res) => {
     const file = req.file;
     const embedding = await uploadVoice(file.path);
     const user_id = generateId();
-    await saveEmbedding(user_id, file.path, embedding);
+    const saved = await saveEmbedding(user_id, file.path, embedding);
+    saved.user_id = user_id;
 
-    return res.status(200).send("File upload successfully");
+    return success(res, saved, `File upload successfully, user_id is ${user_id}`);
   }
   catch (e) {
-    return res.status(500).send(e.message)
+    return failure(res, {}, e.message);
   }
 }
 
@@ -41,9 +53,9 @@ const handleVoiceVerify = async (req, res) => {
     const file = req.file;
     const user_id = req.body.user_id;
 
-    const existingEmbedding = await findEmbedding(uuid);
+    const existingEmbedding = await findEmbedding(user_id);
     if (!existingEmbedding) {
-      return res.status(401).send("Session not found")
+      return failure(res, {}, "Session not found");
     }
 
     const embedding = await uploadVoice(file.path);
@@ -59,10 +71,16 @@ const handleVoiceVerify = async (req, res) => {
     })
 
 
-    return res.status(200).json(result)
+    if (result.data.verify) {
+      return success(res, result.data, "Audio file is vaild");
+    }
+    else {
+      return success(res, result.data, "Audio file is invaild");
+    }
   }
   catch (e) {
-    return res.status(500).send(e.message)
+    console.log(e.stack);
+    return failure(res, {}, e.message);
   }
 }
 
