@@ -1,2 +1,2 @@
 # gateway
-gateway to transfer data `deepfake-dectection` and `speaker-verification`
+gateway to transfer data of `deepfake-dectection` and `speaker-verification`
