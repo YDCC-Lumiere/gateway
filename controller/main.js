@@ -15,10 +15,40 @@ Object.defineProperties(globalThis, {
   ReadableStream: { value: ReadableStream }
 })
 
-const handleFace = (req, res) => {
+const handleFace = async (req, res) => {
   const file = req.file;
+  const form = new FormData();
+  form.append('file', await fileFromPath(file.path));
+  result = await clientFace.post('/upload', form, (err) => {
+    if (err) {
+      throw new Error("File upload failed");
+    }
+  })
 
-  return res.status(200).send("OK");
+  if (result.data.valid) {
+    return success(res, result.data, "Image is valid");
+  }
+  else {
+    return failure(res, result.data, "Image is invalid");
+  }
+}
+
+const handleFaceVideo = async (req, res) => {
+  const file = req.file;
+  const form = new FormData();
+  form.append('file', await fileFromPath(file.path));
+  result = await clientFace.post('/upload-video', form, (err) => {
+    if (err) {
+      throw new Error("File upload failed");
+    }
+  })
+
+  if (result.data.valid) {
+    return success(res, result.data, "Video is valid");
+  }
+  else {
+    return failure(res, result.data, "Video is invalid");
+  }
 }
 
 const uploadVoice = async (path) => {
@@ -86,6 +116,7 @@ const handleVoiceVerify = async (req, res) => {
 
 module.exports = {
   handleFace,
+  handleFaceVideo,
   handleVoiceUpload,
   handleVoiceVerify
 }
